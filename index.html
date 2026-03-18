@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>ジャンプゲーム</title>
+<title>本格アクションゲーム</title>
 <style>
   body {
     text-align: center;
@@ -10,18 +10,18 @@
     color: white;
   }
   canvas {
-    background: #eee;
+    background: #eef;
     margin-top: 20px;
   }
 </style>
 </head>
 <body>
 
-<h1>ジャンプ回避ゲーム</h1>
-<p>スペースキーでジャンプ！障害物をよけろ！</p>
-<p>スコア: <span id="score">0</span></p>
+<h1>本格アクションゲーム</h1>
+<p>スペースでジャンプ（2段ジャンプOK）</p>
+<p>スコア: <span id="score">0</span> | ライフ: <span id="life">3</span></p>
 
-<canvas id="game" width="500" height="300"></canvas>
+<canvas id="game" width="600" height="300"></canvas>
 
 <script>
 const canvas = document.getElementById("game");
@@ -29,75 +29,113 @@ const ctx = canvas.getContext("2d");
 
 let player = {
   x: 50,
-  y: 250,
-  width: 30,
-  height: 30,
+  y: 240,
+  w: 30,
+  h: 30,
   dy: 0,
-  jumping: false
+  jumpCount: 0
 };
 
-let gravity = 0.8;
-let obstacles = [];
+let gravity = 0.7;
 let speed = 5;
 let score = 0;
+let life = 3;
 let gameOver = false;
 
-// ジャンプ
-document.addEventListener("keydown", (e) => {
-  if (e.code === "Space" && !player.jumping) {
+let enemies = [];
+let coins = [];
+
+// ジャンプ（2段）
+document.addEventListener("keydown", e => {
+  if (e.code === "Space" && player.jumpCount < 2) {
     player.dy = -12;
-    player.jumping = true;
+    player.jumpCount++;
   }
 });
 
-// 障害物生成
-function addObstacle() {
-  obstacles.push({
-    x: 500,
-    y: 260,
-    width: 20,
-    height: 40
+// 敵生成
+function addEnemy() {
+  enemies.push({
+    x: 600,
+    y: 250,
+    w: 30,
+    h: 30
   });
 }
 
-// 衝突判定
+// コイン生成
+function addCoin() {
+  coins.push({
+    x: 600,
+    y: Math.random() * 200 + 50,
+    size: 15
+  });
+}
+
+// 当たり判定
 function hit(a, b) {
   return (
-    a.x < b.x + b.width &&
-    a.x + a.width > b.x &&
-    a.y < b.y + b.height &&
-    a.y + a.height > b.y
+    a.x < b.x + b.w &&
+    a.x + a.w > b.x &&
+    a.y < b.y + b.h &&
+    a.y + a.h > b.y
   );
 }
 
 function update() {
   if (gameOver) return;
 
-  ctx.clearRect(0, 0, 500, 300);
+  ctx.clearRect(0, 0, 600, 300);
 
   // プレイヤー
   player.y += player.dy;
   player.dy += gravity;
 
-  if (player.y >= 250) {
-    player.y = 250;
+  if (player.y >= 240) {
+    player.y = 240;
     player.dy = 0;
-    player.jumping = false;
+    player.jumpCount = 0;
   }
 
   ctx.fillStyle = "blue";
-  ctx.fillRect(player.x, player.y, player.width, player.height);
+  ctx.fillRect(player.x, player.y, player.w, player.h);
 
-  // 障害物
+  // 敵
   ctx.fillStyle = "red";
-  for (let i = 0; i < obstacles.length; i++) {
-    let ob = obstacles[i];
-    ob.x -= speed;
-    ctx.fillRect(ob.x, ob.y, ob.width, ob.height);
+  for (let i = enemies.length - 1; i >= 0; i--) {
+    let e = enemies[i];
+    e.x -= speed;
+    ctx.fillRect(e.x, e.y, e.w, e.h);
 
-    if (hit(player, ob)) {
-      gameOver = true;
-      alert("ゲームオーバー！スコア: " + score);
+    if (hit(player, e)) {
+      enemies.splice(i, 1);
+      life--;
+      document.getElementById("life").textContent = life;
+
+      if (life <= 0) {
+        gameOver = true;
+        alert("ゲームオーバー！スコア: " + score);
+      }
+    }
+  }
+
+  // コイン
+  ctx.fillStyle = "gold";
+  for (let i = coins.length - 1; i >= 0; i--) {
+    let c = coins[i];
+    c.x -= speed;
+    ctx.beginPath();
+    ctx.arc(c.x, c.y, c.size, 0, Math.PI * 2);
+    ctx.fill();
+
+    if (
+      player.x < c.x + c.size &&
+      player.x + player.w > c.x - c.size &&
+      player.y < c.y + c.size &&
+      player.y + player.h > c.y - c.size
+    ) {
+      coins.splice(i, 1);
+      score += 50;
     }
   }
 
@@ -105,16 +143,17 @@ function update() {
   score++;
   document.getElementById("score").textContent = score;
 
-  // スピードアップ（鬼化）
-  if (score % 200 === 0) {
+  // 難易度アップ
+  if (score % 300 === 0) {
     speed += 1;
   }
 
   requestAnimationFrame(update);
 }
 
-// 障害物出現
-setInterval(addObstacle, 1200);
+// 出現タイミング
+setInterval(addEnemy, 1200);
+setInterval(addCoin, 1500);
 
 update();
 </script>
