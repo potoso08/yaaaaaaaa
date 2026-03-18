@@ -1,42 +1,94 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>クリックゲーム</title>
-  <style>
-    body {
-      text-align: center;
-      font-family: sans-serif;
-      background-color: #f0f8ff;
-    }
-    button {
-      font-size: 30px;
-      padding: 20px 40px;
-      margin-top: 30px;
-      cursor: pointer;
-    }
-    #score {
-      font-size: 40px;
-      color: #333;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>よけゲーム</title>
+<style>
+  body {
+    text-align: center;
+    background: #222;
+    color: white;
+  }
+  canvas {
+    background: #fff;
+    margin-top: 20px;
+  }
+</style>
 </head>
 <body>
 
-  <h1>クリックゲーム</h1>
-  <p>ボタンを押して点数を増やそう！</p>
-  <div id="score">0</div>
+<h1>よけゲーム</h1>
+<p>← → キーで動いて赤をよけろ！</p>
+<p>スコア: <span id="score">0</span></p>
 
-  <button onclick="addScore()">クリック！</button>
+<canvas id="game" width="400" height="400"></canvas>
 
-  <script>
-    let score = 0;
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
 
-    function addScore() {
-      score++;
-      document.getElementById("score").textContent = score;
+let player = { x: 180, y: 350, size: 20 };
+let enemies = [];
+let score = 0;
+let gameOver = false;
+
+// プレイヤー操作
+document.addEventListener("keydown", (e) => {
+  if (e.key === "ArrowLeft") player.x -= 20;
+  if (e.key === "ArrowRight") player.x += 20;
+});
+
+// 敵を追加
+function addEnemy() {
+  let x = Math.random() * 380;
+  enemies.push({ x: x, y: 0, size: 20 });
+}
+
+// 衝突判定
+function isHit(a, b) {
+  return (
+    a.x < b.x + b.size &&
+    a.x + a.size > b.x &&
+    a.y < b.y + b.size &&
+    a.y + a.size > b.y
+  );
+}
+
+// ゲームループ
+function update() {
+  if (gameOver) return;
+
+  ctx.clearRect(0, 0, 400, 400);
+
+  // プレイヤー
+  ctx.fillStyle = "blue";
+  ctx.fillRect(player.x, player.y, player.size, player.size);
+
+  // 敵
+  ctx.fillStyle = "red";
+  for (let i = 0; i < enemies.length; i++) {
+    let e = enemies[i];
+    e.y += 3;
+    ctx.fillRect(e.x, e.y, e.size, e.size);
+
+    if (isHit(player, e)) {
+      gameOver = true;
+      alert("ゲームオーバー！スコア: " + score);
     }
-  </script>
+  }
+
+  // スコア更新
+  score++;
+  document.getElementById("score").textContent = score;
+
+  requestAnimationFrame(update);
+}
+
+// 敵を定期的に出す
+setInterval(addEnemy, 1000);
+
+update();
+</script>
 
 </body>
 </html>
